@@ -1,3 +1,4 @@
+// 链表的反转
 // 链表由节点Node组成, 每个节点记录着数据还有下一个节点的引用
 // linklist 还head, size 等重要属性
 
@@ -50,6 +51,7 @@ class LinkedList {
     if (index == 0) {
       let head = this.head
       this.head = this.head.next
+      head.next = null    // 只返回删除的节点
       return head
     } else {
       let current = this.head
@@ -71,22 +73,46 @@ class LinkedList {
     }
     return current
   }
+  // 递归反转 -> 递归要满足一定的条件 ==> 1. 内部函数 2. 边界条件
+  reverseCursor() {
+    function reverse(node) {
+      // node == null: 传入的就是一个空列表
+      // node.next == null: 链表只有一个节点
+      if (node == null || node.next == null) return node
+      // 递归调用, 传入node的下一个节点, 调用多次, 找到的就是最后一个节点
+      let newHead = reverse(node.next)
+      // 下面是递归的逻辑, 递归完了做点什么
+      // 边界条件返回的是node, 不是node.next, 拿两个节点思考, 1, 2: 1有next, 继续向后, 把node.next => 即2传入reverse()中, 发现2的next为null, 返回node, 此时的node是1
+      // 即当前返回的node是链表的倒数第二个节点
+      node.next.next = node
+      node.next = null
+      // 把反转后的, 原来链表最后一个节点串成的链表 作为头head进行返回
+      return newHead
+    }
+    // 入参: 原链表的头, 返回值: 新链表
+    this.head = reverse(this.head)
+    return this.head
+  }
+  // 非递归反转: 设置一个新链表, 把原链表一个个拿出来,放到新链表中
+  reverse() {
+    // 新链表, 头为null
+    let newHead = null
+    // 拿出原链表一个节点
+    let node = this.head
+    newHead = node
+    while (node) {
+
+    }
+  }
 }
 
-let ll = new LinkedList
-ll.add(0, 1)
-ll.add(1, 2)
-ll.add(2, 3)
-ll.add(0, 100)
-ll.add(1, 200)
-ll.add(1000)
-// ll.add(1000, 900)    // 越界
-// [100,200,1,2,3]
-ll.remove(0)
-ll.remove(1)
 
-// [200,2,3]
-console.dir(ll, { depth: 100 })
-let getNode = ll.get(2)
-console.log('getNode:', getNode)
+let ll = new LinkedList();
 
+ll.add(1);
+ll.add(2);
+ll.add(3);
+ll.add(4);
+console.dir(ll, { depth: 1000 });
+
+console.dir(ll.reverseCursor(), { depth: 1000 })

@@ -50,6 +50,7 @@ class LinkedList {
     if (index == 0) {
       let head = this.head
       this.head = this.head.next
+      head.next = null    // 只返回删除的节点
       return head
     } else {
       let current = this.head
@@ -73,20 +74,35 @@ class LinkedList {
   }
 }
 
-let ll = new LinkedList
-ll.add(0, 1)
-ll.add(1, 2)
-ll.add(2, 3)
-ll.add(0, 100)
-ll.add(1, 200)
-ll.add(1000)
-// ll.add(1000, 900)    // 越界
-// [100,200,1,2,3]
-ll.remove(0)
-ll.remove(1)
 
-// [200,2,3]
-console.dir(ll, { depth: 100 })
-let getNode = ll.get(2)
-console.log('getNode:', getNode)
+// 使用链表模拟队列
+// 先进先出
+class Queue {
+  constructor() {
+    this.q = new LinkedList()
+  }
+  // 添加总是从默认追加
+  offer(element) {
+    this.q.add(element)
+  }
 
+  // 查看队列的头节点
+  peek() {
+    return this.q.get(0)
+  }
+
+  // 队列的删除总是从队列的开头删除
+  remove() {
+    return this.q.remove(0)
+  }
+
+}
+console.log("========= queue ==========")
+let q = new Queue()
+q.offer(1)
+q.offer(2)
+// q.offer(3)
+// console.log(q)
+// console.log('1. -->', q.peek())
+console.log('2. -->', q.remove())   // 删除会返回
+console.log(q.peek())

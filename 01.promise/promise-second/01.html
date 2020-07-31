@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script>
+
+    function ajaxPromise(url) {
+      return new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest()
+        xhr.open('GET', url, true)
+        xhr.send(null)
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              resolve(xhr.responseText)
+            } else {
+              reject(xhr.responseText)
+            }
+          }
+        }
+      })
+    }
+
+    ajaxPromise('http://www.baidu.com').then(data => {
+      console.log(data)
+    }).catch(err => console.log(err))
+  </script>
+</body>
+
+</html>

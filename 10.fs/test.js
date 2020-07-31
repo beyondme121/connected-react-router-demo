@@ -68,7 +68,7 @@ function copy(source, target, cb) {
   })
 }
 
-copy('./01.read.js', 'fs.stream.js', err => {
+copy('./01.read.js', 'test.js', err => {
   if (err) console.log(err)
   console.log('copy ok')
 })
