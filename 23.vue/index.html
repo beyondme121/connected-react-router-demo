@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="dist/umd/vue.js"></script>
+</head>
+
+<body>
+  <div id="app" style="color:red;">
+    <p>hello world zf{{school}}</p>
+  </div>
+  <script>
+    Vue.mixin({
+      created: function a() {
+        console.log('a')
+      },
+      beforeCreate() {
+        console.log('Vue.mixin beforeCreate')
+      },
+      beforeMount() {
+        console.log('beforeMount')
+      }
+    })
+    Vue.mixin({
+      created: function b() {
+        console.log('b')
+      }
+    })
+
+    let vm = new Vue({
+      el: '#app',
+      created() {
+        console.log('new Vue created')
+      },
+      data() {
+        return { arr: [1, 2, 3], school: { name: 'zf', age: 10 } }
+      },
+    });
+
+  </script>
+
+</body>
+
+</html>
