@@ -1,5 +1,7 @@
 import { arrayMethods } from "./array"
 import { definePropertyWithoutEnumerable } from "../utils"
+import Dep from "./dep"
+
 
 class Observer {
   constructor(value) {
@@ -35,17 +37,25 @@ class Observer {
 function defineReactive(data, key, value) {
   // 递归观察data嵌套的对象
   observe(value)
+  // 每个属性一个dep
+  let dep = new Dep()
+
   Object.defineProperty(data, key, {
     get() {
-      console.log('数据获取了')
+      if (Dep.target) {
+        dep.depend()
+      }
       return value
     },
     set(newValue) {
       if (newValue === value) return
       console.log('数据设置了')
-      // 给data属性设置一个对象,设置的对象也需要进行观测
+      // 如果给data属性设置一个对象,设置的对象也需要进行观测
       observe(newValue)
       value = newValue
+
+      // 数据变更, 通知dep中的所有watcher调用自己的更新
+      dep.notify()
     }
   })
 }

@@ -1,12 +1,26 @@
 // 生命周期也是一个插件, 需要在Vue实例的原型上挂载更新与render方法
 
 import { patch } from "./vdom/patch"
+import Watcher from "./observer/watcher"
 
 export function mountComponent(vm, el) {
   callHook(vm, 'beforeMount')
   // 1. 生成虚拟DOM => vm._render() 2. 渲染真实节点vm._update
   // 都是vm实例上的方法, render和update都是组件生命周期的一部分, 抽离成一个lifecycle文件转换处理生命周期, 理念上与初始化平级别 init - lifecycle
-  vm._update(vm._render())
+  // vm._update(vm._render())
+
+  const updateComponent = () => {
+    vm._update(vm._render())
+  }
+  const updateCallback = () => { }
+  const isRenderWatcher = true
+
+  let watcher = new Watcher(vm, updateComponent, updateCallback, isRenderWatcher)
+
+  // setTimeout(() => {
+  //   watcher.get()
+  // }, 1000);
+
   callHook(vm, 'mounted')
 }
 
@@ -14,7 +28,7 @@ export function lifecycleMixin(Vue) {
   // 渲染页面
   Vue.prototype._update = function (vdom) {
     const vm = this
-    patch(vm.$el, vdom)
+    vm.$el = patch(vm.$el, vdom)    // 新的vdom, 生成新的DOM, 替换掉老的DOM vm.$el, 然后返回这个新的DOM, 赋值给实例属性上 vm.$el
   }
   // 生成虚拟DOM
   Vue.prototype._render = function () {

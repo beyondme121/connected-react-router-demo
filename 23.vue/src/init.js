@@ -41,6 +41,7 @@ export function initMixin(Vue) {
       options.render = render
     }
     // 挂载组件 属于生命周期的一部分 (创建VDOM和渲染真实节点的开始 vm上有render, el是被替换的DOM节点)
+    // debugger
     mountComponent(vm, el)
   }
 }

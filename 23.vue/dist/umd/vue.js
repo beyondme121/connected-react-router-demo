@@ -203,6 +203,48 @@
     return options;
   }
 
+  var id = 0;
+
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+
+      this.subs = [];
+      this.id = id++;
+    }
+
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        // this.subs.push(Dep.target)
+        Dep.target.addDep(this);
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      } // 数据变更, 让所有的watcher调用自己的update方法, watcher敞开方法供dep调用
+
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          return watcher.update();
+        });
+      }
+    }]);
+
+    return Dep;
+  }(); // 属性依赖dep 要记住 在哪个watcher中使用了，也就是属性在哪个组件中
+
+
+  function pushTarget(watcher) {
+    Dep.target = watcher;
+  }
+  function popTarget() {
+    Dep.target = null;
+  }
+
   var Observer = /*#__PURE__*/function () {
     function Observer(value) {
       _classCallCheck(this, Observer);
@@ -244,18 +286,25 @@
 
   function defineReactive(data, key, value) {
     // 递归观察data嵌套的对象
-    observe(value);
+    observe(value); // 每个属性一个dep
+
+    var dep = new Dep();
     Object.defineProperty(data, key, {
       get: function get() {
-        console.log('数据获取了');
+        if (Dep.target) {
+          dep.depend();
+        }
+
         return value;
       },
       set: function set(newValue) {
         if (newValue === value) return;
-        console.log('数据设置了'); // 给data属性设置一个对象,设置的对象也需要进行观测
+        console.log('数据设置了'); // 如果给data属性设置一个对象,设置的对象也需要进行观测
 
         observe(newValue);
-        value = newValue;
+        value = newValue; // 数据变更, 通知dep中的所有watcher调用自己的更新
+
+        dep.notify();
       }
     });
   } // 观测数据的变化, 更新视图
@@ -624,12 +673,81 @@
     }
   }
 
+  var id$1 = 0;
+
+  var Watcher = /*#__PURE__*/function () {
+    /**
+     * @param {*} vm 
+     * @param {*} exprOrFn: 可能是表达式 Vue.$set这种更新数据; 也可能是函数, 直接调用update(render)
+     * @param {*} updateCallback: 更新后的callback
+     * @param {*} options: 包含了是否为渲染watcher
+     */
+    function Watcher(vm, exprOrFn, updateCallback, options) {
+      _classCallCheck(this, Watcher);
+
+      this.vm = vm;
+      this.exprOrFn = exprOrFn;
+      this.updateCallback = updateCallback;
+      this.options = options;
+      this.deps = [];
+      this.depsId = new Set();
+      this.id = id$1++;
+
+      if (typeof exprOrFn === 'function') {
+        this.getter = exprOrFn;
+      }
+
+      this.get();
+    } // watcher记录dep
+
+
+    _createClass(Watcher, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        // this.deps.push(dep)
+        var id = dep.id;
+
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this);
+        }
+      }
+    }, {
+      key: "get",
+      value: function get() {
+        pushTarget(this); // 把watcher实例给到Dep类去折腾. 在Dep.target = this
+        // 渲染页面(1. 代码生成render 2. 生成DOM,挂载页面)
+
+        this.getter();
+        popTarget();
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        this.get();
+      }
+    }]);
+
+    return Watcher;
+  }();
+
   // 生命周期也是一个插件, 需要在Vue实例的原型上挂载更新与render方法
   function mountComponent(vm, el) {
     callHook(vm, 'beforeMount'); // 1. 生成虚拟DOM => vm._render() 2. 渲染真实节点vm._update
     // 都是vm实例上的方法, render和update都是组件生命周期的一部分, 抽离成一个lifecycle文件转换处理生命周期, 理念上与初始化平级别 init - lifecycle
+    // vm._update(vm._render())
 
-    vm._update(vm._render());
+    var updateComponent = function updateComponent() {
+      vm._update(vm._render());
+    };
+
+    var updateCallback = function updateCallback() {};
+
+    var isRenderWatcher = true;
+    var watcher = new Watcher(vm, updateComponent, updateCallback, isRenderWatcher); // setTimeout(() => {
+    //   watcher.get()
+    // }, 1000);
 
     callHook(vm, 'mounted');
   }
@@ -637,7 +755,7 @@
     // 渲染页面
     Vue.prototype._update = function (vdom) {
       var vm = this;
-      patch(vm.$el, vdom);
+      vm.$el = patch(vm.$el, vdom); // 新的vdom, 生成新的DOM, 替换掉老的DOM vm.$el, 然后返回这个新的DOM, 赋值给实例属性上 vm.$el
     }; // 生成虚拟DOM
 
 
@@ -698,6 +816,7 @@
         var render = compileToFunctions(template);
         options.render = render;
       } // 挂载组件 属于生命周期的一部分 (创建VDOM和渲染真实节点的开始 vm上有render, el是被替换的DOM节点)
+      // debugger
 
 
       mountComponent(vm);
