@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="dist/umd/vue.js"></script>
+</head>
+
+<body>
+  <div id="app" style="color:red;">
+    <p>hello world zf{{school}}</p>
+    <div>{{a}}</div>
+    <div>{{arr}}</div>
+  </div>
+  <script>
+    Vue.mixin({
+      created: function a() {
+        console.log('a')
+      },
+      beforeCreate() {
+        console.log('Vue.mixin beforeCreate')
+      },
+      beforeMount() {
+        console.log('beforeMount')
+      }
+    })
+    Vue.mixin({
+      created: function b() {
+        console.log('b')
+      }
+    })
+
+    let vm = new Vue({
+      el: '#app',
+      created() {
+        console.log('new Vue created')
+      },
+      data() {
+        return {
+          arr: [{ name: 'sanfeng' }, 2, 3],
+          school: { name: 'zf', age: 10 },
+          welcome: "hello",
+          a: { a: 1 }
+        }
+      },
+    });
+
+    setTimeout(() => {
+      vm.arr.push(123)
+      vm.arr.push(123)
+      vm.arr.push(123)
+      vm.a.a = 100
+
+      // 用户调用nextTick
+      vm.$nextTick(() => {
+
+      })
+    }, 1000)
+
+    // setTimeout(() => {
+    //   vm.arr[0].name = 'zhangsan...'
+    //   vm.arr[0] = 999
+    //   vm.arr.length = 0
+    // }, 1000)
+
+    // setTimeout(() => {
+    //   vm.arr.push(123)
+    // }, 1000)
+    // console.log(vm.welcome)
+    // vm.school.name = 'sanfeng'
+    // console.log(vm.school.name)
+    // vm._update(vm._render())
+
+
+    // setTimeout(() => {
+    //   vm.school.name = 'ABB'
+    //   // vm._update(vm._render())
+    // }, 1000)
+
+  </script>
+
+</body>
+
+</html>
