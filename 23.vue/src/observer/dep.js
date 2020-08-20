@@ -9,7 +9,7 @@ class Dep {
     // this.subs.push(Dep.target)
     Dep.target.addDep(this)
   }
-
+  // 给dep上添加watcher
   addSub(watcher) {
     this.subs.push(watcher)
   }

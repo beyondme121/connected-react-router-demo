@@ -17,7 +17,8 @@ export default {
       open: true,
       port: 3000,
       contentBase: '',
-      openPage: '/index.html'
+      // openPage: '/index.html'
+      openPage: '/watch.html'
     })
   ]
 }

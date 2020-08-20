@@ -11,6 +11,8 @@
 <body>
   <div id="app" style="color:red;">
     <p>hello world zf{{school}}</p>
+    <div>{{a}}</div>
+    <div>{{arr}}</div>
   </div>
   <script>
     Vue.mixin({
@@ -36,19 +38,46 @@
         console.log('new Vue created')
       },
       data() {
-        return { arr: [1, 2, 3], school: { name: 'zf', age: 10 } }
+        return {
+          arr: [{ name: 'sanfeng' }, 2, 3],
+          school: { name: 'zf', age: 10 },
+          welcome: "hello",
+          a: { a: 1 }
+        }
       },
     });
 
-    vm.school.name = 'sanfeng'
+    setTimeout(() => {
+      vm.arr.push(123)
+      vm.arr.push(123)
+      vm.arr.push(123)
+      vm.a.a = 100
+
+      // 用户调用nextTick
+      vm.$nextTick(() => {
+
+      })
+    }, 1000)
+
+    // setTimeout(() => {
+    //   vm.arr[0].name = 'zhangsan...'
+    //   vm.arr[0] = 999
+    //   vm.arr.length = 0
+    // }, 1000)
+
+    // setTimeout(() => {
+    //   vm.arr.push(123)
+    // }, 1000)
+    // console.log(vm.welcome)
+    // vm.school.name = 'sanfeng'
     // console.log(vm.school.name)
     // vm._update(vm._render())
 
 
-    setTimeout(() => {
-      vm.school.name = 'ABB'
-      // vm._update(vm._render())
-    }, 1000)
+    // setTimeout(() => {
+    //   vm.school.name = 'ABB'
+    //   // vm._update(vm._render())
+    // }, 1000)
 
   </script>
 

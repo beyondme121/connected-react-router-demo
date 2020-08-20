@@ -5,6 +5,9 @@ import Dep from "./dep"
 
 class Observer {
   constructor(value) {
+    // 记住最外层的对象
+    this.dep = new Dep()   // value ={}  value = [], 从data(){ return { obj, arr }} return返回的对象进行监控 其中可能是对象,也可能是数组
+
     definePropertyWithoutEnumerable(value, '__ob__', this)  // this: Observer实例
     // value.__ob__ = this
 
@@ -34,9 +37,13 @@ class Observer {
   }
 }
 
+// 给每个属性添加响应式 增加dep以及watcher的处理
 function defineReactive(data, key, value) {
   // 递归观察data嵌套的对象
-  observe(value)
+  let childDep = observe(value)  // 获取到数组对应的dep
+
+  // observe(value)
+
   // 每个属性一个dep
   let dep = new Dep()
 
@@ -44,6 +51,9 @@ function defineReactive(data, key, value) {
     get() {
       if (Dep.target) {
         dep.depend()
+        if (childDep) {
+          childDep.dep.depend()
+        }
       }
       return value
     },

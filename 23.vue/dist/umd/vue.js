@@ -42,6 +42,55 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _slicedToArray(arr, i) {
     return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
   }
@@ -111,6 +160,7 @@
         args[_key] = arguments[_key];
       }
 
+      // console.log(args)
       // 切面编程: 做点特殊的事情之后, 再调用原本执行的方法
       // console.log('数组方法重写了，更新视图')
       // 原本的方法执行
@@ -134,7 +184,10 @@
 
       if (inserted) {
         ob.observeArray(inserted);
-      }
+      } // 通过observer实例获取dep
+
+
+      ob.dep.notify(); // 通知数组更新
 
       return result;
     };
@@ -202,6 +255,53 @@
 
     return options;
   }
+  var callbacks = [];
+  var pending = false;
+  var timerFunc;
+
+  function flushCallbacks() {
+    while (callbacks.length) {
+      var cb = callbacks.shift();
+      cb();
+    }
+
+    pending = false;
+  }
+
+  if (Promise) {
+    timerFunc = function timerFunc() {
+      Promise.resolve().then(flushCallbacks);
+    };
+  } else if (MutationObserver) {
+    var observe = new MutationObserver(flushCallbacks);
+    var textNode = document.createTextNode(1);
+    observe.observe(textNode, {
+      characterData: true
+    });
+
+    timerFunc = function timerFunc() {
+      textNode.textContent = 2;
+    };
+  } else if (setImmediate) {
+    timerFunc = function timerFunc() {
+      setImmediate(flushCallbacks);
+    };
+  } else {
+    timerFunc = function timerFunc() {
+      setTimeout(flushCallbacks);
+    };
+  } // watcher.js: queueWatcher中调用
+  // 参数cb: 传入一个刷新watcher队列的函数
+
+
+  function nextTick(cb) {
+    callbacks.push(cb);
+
+    if (!pending) {
+      timerFunc();
+      pending = true;
+    }
+  }
 
   var id = 0;
 
@@ -218,7 +318,8 @@
       value: function depend() {
         // this.subs.push(Dep.target)
         Dep.target.addDep(this);
-      }
+      } // 给dep上添加watcher
+
     }, {
       key: "addSub",
       value: function addSub(watcher) {
@@ -249,6 +350,9 @@
     function Observer(value) {
       _classCallCheck(this, Observer);
 
+      // 记住最外层的对象
+      this.dep = new Dep(); // value ={}  value = [], 从data(){ return { obj, arr }} return返回的对象进行监控 其中可能是对象,也可能是数组
+
       definePropertyWithoutEnumerable(value, '__ob__', this); // this: Observer实例
       // value.__ob__ = this
       // 如果是数组, 不观测每一项
@@ -268,7 +372,7 @@
       value: function observeArray(value) {
         value.forEach(function (item) {
           // 观测数组中的对象类型
-          observe(item);
+          observe$1(item);
         });
       }
     }, {
@@ -282,17 +386,24 @@
     }]);
 
     return Observer;
-  }();
+  }(); // 给每个属性添加响应式 增加dep以及watcher的处理
+
 
   function defineReactive(data, key, value) {
     // 递归观察data嵌套的对象
-    observe(value); // 每个属性一个dep
+    var childDep = observe$1(value); // 获取到数组对应的dep
+    // observe(value)
+    // 每个属性一个dep
 
     var dep = new Dep();
     Object.defineProperty(data, key, {
       get: function get() {
         if (Dep.target) {
           dep.depend();
+
+          if (childDep) {
+            childDep.dep.depend();
+          }
         }
 
         return value;
@@ -301,7 +412,7 @@
         if (newValue === value) return;
         console.log('数据设置了'); // 如果给data属性设置一个对象,设置的对象也需要进行观测
 
-        observe(newValue);
+        observe$1(newValue);
         value = newValue; // 数据变更, 通知dep中的所有watcher调用自己的更新
 
         dep.notify();
@@ -310,7 +421,7 @@
   } // 观测数据的变化, 更新视图
 
 
-  function observe(data) {
+  function observe$1(data) {
     if (data.__ob__) {
       return data;
     } // 只观测对象或数组
@@ -324,6 +435,137 @@
     return new Observer(data);
   }
 
+  var id$1 = 0;
+
+  var Watcher = /*#__PURE__*/function () {
+    /**
+     * @param {*} vm 
+     * @param {*} exprOrFn: 可能是表达式 Vue.$set这种更新数据; 也可能是函数, 直接调用update(render)
+     * @param {*} updateCallback: 更新后的callback
+     * @param {*} options: 包含了是否为渲染watcher
+     */
+    function Watcher(vm, exprOrFn, updateCallback, options) {
+      _classCallCheck(this, Watcher);
+
+      this.vm = vm;
+      this.exprOrFn = exprOrFn;
+      this.updateCallback = updateCallback;
+      this.options = options; // 如果用户定义的watch属性或者直接调用vm.$watch(expr, cb)
+
+      this.user = options.user;
+      this.deps = [];
+      this.depsId = new Set();
+      this.id = id$1++; // watcher内部组件渲染或者更新都是render函数
+
+      if (typeof exprOrFn === 'function') {
+        this.getter = exprOrFn;
+      } else {
+        // 用户自定义的watcher, 如watch: {a: fn}, vm.$watch(exprOrFn,handler,options) 中,exprOrFn通常是字符串(属性key值)
+        this.getter = function () {
+          var obj = vm;
+          var path = exprOrFn.split('.');
+
+          for (var i = 0; i < path.length; i++) {
+            obj = obj[path[i]];
+          }
+
+          return obj;
+        };
+      }
+
+      this.value = this.get();
+    } // watcher记录dep，去重
+
+
+    _createClass(Watcher, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        // this.deps.push(dep)
+        var id = dep.id;
+
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this);
+        }
+      }
+    }, {
+      key: "get",
+      value: function get() {
+        pushTarget(this); // 把watcher实例给到Dep类去折腾. 在Dep.target = this
+        // 渲染页面(1. 代码生成render 2. 生成DOM,挂载页面)
+
+        var result = this.getter();
+        popTarget();
+        return result;
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        // this.get()
+        queueWatcher(this);
+      } // 执行每个watcher
+
+    }, {
+      key: "run",
+      value: function run() {
+        var oldValue = this.value;
+        var newValue = this.get();
+        this.value = newValue;
+
+        if (this.user) {
+          this.updateCallback.call(this.vm, newValue, oldValue);
+        }
+      }
+    }]);
+
+    return Watcher;
+  }(); // 将需要批量更新的watcher存到一个队列中，稍后让watcher执行，存储watcher队列如果是同一个就不再存储了
+
+
+  var queue = [];
+  var has = {};
+  var pending$1 = false; // 刷新当前调度的队列，提出一层，然后queueWatcher中就不要写定时器了
+
+  function flushSchedulerQueue() {
+    // 执行watcher队列 去重后的watcher队列
+    queue.forEach(function (watcher) {
+      watcher.run(); // 如果不是用户watcher, 即如果是渲染watcher, 就执行cb
+
+      if (!watcher.user) {
+        console.log("render watcher cb:", watcher.cb);
+        watcher.cb();
+      } else {
+        console.log("user watcher.cb:", watcher.cb);
+      }
+    }); // 执行完之后清空队列 准备下一次watcher队列的更新
+
+    queue = [];
+    has = {};
+    pending$1 = false;
+  } // 更新队列
+
+
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+
+    if (!has[id]) {
+      queue.push(watcher);
+      has[id] = true;
+
+      if (!pending$1) {
+        // setTimeout(() => {
+        //   queue.forEach(watcher => watcher.run())  // 清空队列
+        //   queue = []
+        //   has = {}
+        //   pending = false
+        // }, 0);
+        nextTick(flushSchedulerQueue);
+        pending$1 = true;
+      }
+    }
+  }
+
   function initState(vm) {
     var opts = vm.$options; // 根据不同的选项, 做不同的拆分处理, data如何处理, props如何处理等
 
@@ -332,8 +574,11 @@
     if (opts.data) {
       initData(vm);
     }
-  }
 
+    if (opts.watch) {
+      initWatch(vm);
+    }
+  } // data数据的初始化操作, 数据劫持
 
   function initData(vm) {
     var data = vm.$options.data; // data可能是函数, 也可能是对象, 函数就直接执行,结果返回对象,赋值给vm也是为了可以通过vue实例获取到数据劫持后的数据(引用)
@@ -344,7 +589,64 @@
       proxy(vm, '_data', key);
     }
 
-    observe(data);
+    observe$1(data);
+  }
+
+
+  function initWatch(vm) {
+    var watches = vm.$options.watch;
+
+    var _loop = function _loop(key) {
+      var handler = watches[key];
+
+      if (Array.isArray(handler)) {
+        handler.forEach(function (handle) {
+          return createWatcher(vm, key, handle);
+        });
+      } else {
+        createWatcher(vm, key, handler);
+      }
+    };
+
+    for (var key in watches) {
+      _loop(key);
+    }
+  } // 大部分情况下exprOrFn是watch中监控的属性名, 字符串, cb可能是函数，对象，字符串
+
+
+  function createWatcher(vm, exprOrFn, handler, options) {
+    // console.log(exprOrFn, cb, options)
+    if (_typeof(handler) === 'object') {
+      // a: { handler () {...,deep, immediate: true, ...}}
+      options = handler; // 把整个对象的配置都给options
+
+      handler = handler.handler; // 把执行的函数拿出来
+    }
+
+    if (typeof handler === 'string') {
+      handler = vm[handler]; // method中的方法
+    } // 其他都是key:fn
+    // return new Watcher(vm, exprOrFn, handler, options)
+
+
+    return vm.$watch(exprOrFn, handler, options);
+  }
+
+  function stateMixin(Vue) {
+    // 用户自定义cb,默认调用util中的nextTick, 共用同调用同一个
+    Vue.prototype.$nextTick = function (cb) {
+      nextTick(cb);
+    };
+
+    Vue.prototype.$watch = function (exprOrFn, cb, options) {
+      var watcher = new Watcher(this, exprOrFn, cb, _objectSpread2(_objectSpread2({}, options), {}, {
+        user: true
+      }));
+
+      if (options.immediate) {
+        cb();
+      }
+    };
   }
 
   var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // 标签名 ?:匹配不捕获
@@ -673,65 +975,6 @@
     }
   }
 
-  var id$1 = 0;
-
-  var Watcher = /*#__PURE__*/function () {
-    /**
-     * @param {*} vm 
-     * @param {*} exprOrFn: 可能是表达式 Vue.$set这种更新数据; 也可能是函数, 直接调用update(render)
-     * @param {*} updateCallback: 更新后的callback
-     * @param {*} options: 包含了是否为渲染watcher
-     */
-    function Watcher(vm, exprOrFn, updateCallback, options) {
-      _classCallCheck(this, Watcher);
-
-      this.vm = vm;
-      this.exprOrFn = exprOrFn;
-      this.updateCallback = updateCallback;
-      this.options = options;
-      this.deps = [];
-      this.depsId = new Set();
-      this.id = id$1++;
-
-      if (typeof exprOrFn === 'function') {
-        this.getter = exprOrFn;
-      }
-
-      this.get();
-    } // watcher记录dep
-
-
-    _createClass(Watcher, [{
-      key: "addDep",
-      value: function addDep(dep) {
-        // this.deps.push(dep)
-        var id = dep.id;
-
-        if (!this.depsId.has(id)) {
-          this.deps.push(dep);
-          this.depsId.add(id);
-          dep.addSub(this);
-        }
-      }
-    }, {
-      key: "get",
-      value: function get() {
-        pushTarget(this); // 把watcher实例给到Dep类去折腾. 在Dep.target = this
-        // 渲染页面(1. 代码生成render 2. 生成DOM,挂载页面)
-
-        this.getter();
-        popTarget();
-      }
-    }, {
-      key: "update",
-      value: function update() {
-        this.get();
-      }
-    }]);
-
-    return Watcher;
-  }();
-
   // 生命周期也是一个插件, 需要在Vue实例的原型上挂载更新与render方法
   function mountComponent(vm, el) {
     callHook(vm, 'beforeMount'); // 1. 生成虚拟DOM => vm._render() 2. 渲染真实节点vm._update
@@ -885,7 +1128,8 @@
 
   initMixin(Vue);
   lifecycleMixin(Vue);
-  renderMixin(Vue); // 扩展Vue静态方法
+  renderMixin(Vue);
+  stateMixin(Vue); // 扩展Vue静态方法
 
   initGlobalApi(Vue);
 

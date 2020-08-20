@@ -68,3 +68,50 @@ export function mergeOptions(parent, child) {
 
   return options
 }
+
+
+let callbacks = []
+let pending = false
+let timerFunc;
+
+
+function flushCallbacks() {
+  while (callbacks.length) {
+    let cb = callbacks.shift()
+    cb()
+  }
+  pending = false
+}
+
+if (Promise) {
+  timerFunc = () => {
+    Promise.resolve().then(flushCallbacks)
+  }
+} else if (MutationObserver) {
+  let observe = new MutationObserver(flushCallbacks)
+  let textNode = document.createTextNode(1)
+  observe.observe(textNode, { characterData: true })
+  timerFunc = () => {
+    textNode.textContent = 2;
+  }
+} else if (setImmediate) {
+  timerFunc = () => {
+    setImmediate(flushCallbacks)
+  }
+} else {
+  timerFunc = () => {
+    setTimeout(flushCallbacks)
+  }
+}
+
+
+
+// watcher.js: queueWatcher中调用
+// 参数cb: 传入一个刷新watcher队列的函数
+export function nextTick(cb) {
+  callbacks.push(cb)
+  if (!pending) {
+    timerFunc()
+    pending = true
+  }
+}

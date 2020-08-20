@@ -1,5 +1,6 @@
 import { observe } from "./observer/index.js"
-import { proxy } from "./utils.js"
+import { proxy, nextTick } from "./utils.js"
+import Watcher from "./observer/watcher.js"
 
 export function initState(vm) {
   const opts = vm.$options
@@ -10,9 +11,10 @@ export function initState(vm) {
   if (opts.data) {
     initData(vm)
   }
+  if (opts.watch) {
+    initWatch(vm)
+  }
 }
-
-function initProps() { }
 
 // data数据的初始化操作, 数据劫持
 function initData(vm) {
@@ -25,4 +27,47 @@ function initData(vm) {
     proxy(vm, '_data', key)
   }
   observe(data)
+}
+
+function initProps() { }
+
+// watch属性对象的作用就是数据属性变化了，执行watch监控的对应方法或者数组方法
+function initWatch(vm) {
+  let watches = vm.$options.watch
+  for (let key in watches) {
+    const handler = watches[key]
+    if (Array.isArray(handler)) {
+      handler.forEach(handle => createWatcher(vm, key, handle))
+    } else {
+      createWatcher(vm, key, handler)
+    }
+  }
+}
+
+// 大部分情况下exprOrFn是watch中监控的属性名, 字符串, cb可能是函数，对象，字符串
+function createWatcher(vm, exprOrFn, handler, options) {
+  // console.log(exprOrFn, cb, options)
+  if (typeof handler === 'object') {       // a: { handler () {...,deep, immediate: true, ...}}
+    options = handler     // 把整个对象的配置都给options
+    handler = handler.handler // 把执行的函数拿出来
+  }
+  if (typeof handler === 'string') {
+    handler = vm[handler]   // method中的方法
+  }
+  // 其他都是key:fn
+  // return new Watcher(vm, exprOrFn, handler, options)
+  return vm.$watch(exprOrFn, handler, options)
+}
+
+export function stateMixin(Vue) {
+  // 用户自定义cb,默认调用util中的nextTick, 共用同调用同一个
+  Vue.prototype.$nextTick = function (cb) {
+    nextTick(cb)
+  }
+  Vue.prototype.$watch = function (exprOrFn, cb, options) {
+    let watcher = new Watcher(this, exprOrFn, cb, { ...options, user: true })
+    if (options.immediate) {
+      cb()
+    }
+  }
 }

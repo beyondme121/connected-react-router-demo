@@ -18,6 +18,8 @@ let methods = [
 methods.forEach(method => {
   // 重新定义数组的方法, 重写上面的7个方法
   arrayMethods[method] = function (...args) {
+
+    // console.log(args)
     // 切面编程: 做点特殊的事情之后, 再调用原本执行的方法
     // console.log('数组方法重写了，更新视图')
     // 原本的方法执行
@@ -40,6 +42,8 @@ methods.forEach(method => {
     if (inserted) {
       ob.observeArray(inserted)
     }
+    // 通过observer实例获取dep
+    ob.dep.notify()  // 通知数组更新
     return result
   }
 })
