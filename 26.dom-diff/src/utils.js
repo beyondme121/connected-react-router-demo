@@ -30,22 +30,6 @@ export const LIFECYCLE_HOOKS = [
   'destroyed'
 ]
 const strategy = {}
-
-// 状态state合并 TODO
-// 合并data, 不能这样简单的取儿子的属性值
-// strategy.data = function (parentVal, childValue) {
-//   return childValue
-// }
-// strategy.computed = function () {
-
-// }
-// strategy.watch = function () {
-
-// }
-
-
-
-
 function mergeHook(parentVal, childVal) {
   if (childVal) {
     if (parentVal) {

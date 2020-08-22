@@ -212,15 +212,7 @@
     });
   }
   var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed'];
-  var strategy = {}; // 状态state合并 TODO
-  // 合并data, 不能这样简单的取儿子的属性值
-  // strategy.data = function (parentVal, childValue) {
-  //   return childValue
-  // }
-  // strategy.computed = function () {
-  // }
-  // strategy.watch = function () {
-  // }
+  var strategy = {};
 
   function mergeHook(parentVal, childVal) {
     if (childVal) {
@@ -1179,19 +1171,21 @@
     var updateCallback = function updateCallback() {};
 
     var isRenderWatcher = true;
-    var watcher = new Watcher(vm, updateComponent, updateCallback, isRenderWatcher);
+    var watcher = new Watcher(vm, updateComponent, updateCallback, isRenderWatcher); // setTimeout(() => {
+    //   watcher.get()
+    // }, 1000);
+
     callHook(vm, 'mounted');
   }
   function lifecycleMixin(Vue) {
     // 渲染页面
     Vue.prototype._update = function (vnode) {
       var vm = this;
-      var preVnode = vm._vnode;
 
-      if (!preVnode) {
+      if (!vm._vnode) {
         vm.$el = patch(vm.$el, vnode); // 新的vdom, 生成新的DOM, 替换掉老的DOM vm.$el, 然后返回这个新的DOM, 赋值给实例属性上 vm.$el
       } else {
-        vm.$el = patch(preVnode, vnode);
+        vm.$el = patch(vm._vnode, vnode);
       }
 
       vm._vnode = vnode;
