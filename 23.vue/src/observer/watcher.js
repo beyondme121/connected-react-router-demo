@@ -85,7 +85,7 @@ function flushSchedulerQueue() {
     // 如果不是用户watcher, 即如果是渲染watcher, 就执行cb
     if (!watcher.user) {
       console.log("render watcher cb:", watcher.cb)
-      watcher.cb()
+      watcher.updateCallback()
     } else {
       console.log("user watcher.cb:", watcher.cb)
     }

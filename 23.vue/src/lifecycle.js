@@ -8,7 +8,6 @@ export function mountComponent(vm, el) {
   // 1. 生成虚拟DOM => vm._render() 2. 渲染真实节点vm._update
   // 都是vm实例上的方法, render和update都是组件生命周期的一部分, 抽离成一个lifecycle文件转换处理生命周期, 理念上与初始化平级别 init - lifecycle
   // vm._update(vm._render())
-
   const updateComponent = () => {
     vm._update(vm._render())
   }
@@ -26,9 +25,15 @@ export function mountComponent(vm, el) {
 
 export function lifecycleMixin(Vue) {
   // 渲染页面
-  Vue.prototype._update = function (vdom) {
+  Vue.prototype._update = function (vnode) {
     const vm = this
-    vm.$el = patch(vm.$el, vdom)    // 新的vdom, 生成新的DOM, 替换掉老的DOM vm.$el, 然后返回这个新的DOM, 赋值给实例属性上 vm.$el
+    if (!vm._vnode) {
+      vm.$el = patch(vm.$el, vnode) // 新的vdom, 生成新的DOM, 替换掉老的DOM vm.$el, 然后返回这个新的DOM, 赋值给实例属性上 vm.$el
+
+    } else {
+      vm.$el = patch(vm._vnode, vnode)
+    }
+    vm._vnode = vnode
   }
   // 生成虚拟DOM
   Vue.prototype._render = function () {

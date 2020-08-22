@@ -26,7 +26,6 @@ export function initMixin(Vue) {
   }
 
   Vue.prototype.$mount = function (el) {
-    // debugger
     const vm = this
     el = document.querySelector(el)
     vm.$el = el
