@@ -1,6 +1,7 @@
 import { observe } from "./observer/index.js"
 import { proxy, nextTick } from "./utils.js"
 import Watcher from "./observer/watcher.js"
+import Dep from "./observer/dep.js"
 
 export function initState(vm) {
   const opts = vm.$options
@@ -13,6 +14,9 @@ export function initState(vm) {
   }
   if (opts.watch) {
     initWatch(vm)
+  }
+  if (opts.computed) {
+    initComputed(vm)
   }
 }
 
@@ -58,6 +62,60 @@ function createWatcher(vm, exprOrFn, handler, options) {
   // return new Watcher(vm, exprOrFn, handler, options)
   return vm.$watch(exprOrFn, handler, options)
 }
+
+function initComputed(vm) {
+  const computed = vm.$options.computed
+  const watchers = vm._computedWatchers = {}
+  // debugger
+  // 因为依赖的属性变更，计算属性要重新执行, 有依赖收集的功能, 内部实现了watcher，所以要重写computed的每一个属性,
+  // 并且将属性改在到vm实例上，可以让组件通过this.计算属性获的形式 获取到这个值
+  for (let key in computed) {
+    const userDef = computed[key]     // 两种计算属性的写法 1. 函数 2. 对象
+    // 获取get方法, 用于传递给watcher的 get属性, 即属性发生变更执行的函数
+    const getter = typeof userDef == 'function' ? userDef : userDef.get;
+    // 给每个计算属性增加一个watcher,保存的vm实例变量_computedWatchers上, watcers['fullName'] = watcher
+    // 并且标识一下当前的watcher的类型是计算属性，是lazy的
+    watchers[key] = new Watcher(vm, getter, () => { }, { lazy: true })
+    defineComputed(vm, key, userDef)
+  }
+}
+
+
+
+// 这里没有写vm而是target表示的是: 可能是给Vue的实例挂属性, 也可能给组件实例挂属性
+// 入参:userDef 可能是函数 或者是对象;如果是函数,处理成对象的形式. 定义sharedComputedProperty为对象,给对象增加get,set属性
+function defineComputed(target, key, userDef) {
+  const sharedComputedProperty = {}
+  if (typeof userDef == 'function') {
+    sharedComputedProperty.get = createComputedGetter(key)      // 调用get,就是执行usefDef函数
+  } else {
+    sharedComputedProperty.get = createComputedGetter(key)
+    sharedComputedProperty.set = userDef.set
+  }
+  Object.defineProperty(target, key, sharedComputedProperty)
+}
+
+
+// 此方法是我们包装的方法，每次取值会调用此方法
+function createComputedGetter(key) {
+  // 取值时才会调用
+  return function () {
+    const watcher = this._computedWatchers[key] // 拿到这个属性对应的watcher
+    if (watcher) {
+      if (watcher.dirty) {    // 默认肯定是脏的，Watcher类初始化为true.
+        watcher.evaluate()    // 对当前watcher求值
+        // return watcher.value
+      }
+      // 
+      if (Dep.target) { // 说明还有渲染watcher，也应该一并的收集起来
+        watcher.depend()
+      }
+      // 如果不是dirty的，说明是新的，赶紧的，直接返回
+      return watcher.value
+    }
+  }
+}
+
 
 export function stateMixin(Vue) {
   // 用户自定义cb,默认调用util中的nextTick, 共用同调用同一个

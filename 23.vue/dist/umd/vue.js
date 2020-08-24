@@ -344,14 +344,20 @@
     }]);
 
     return Dep;
-  }(); // 属性依赖dep 要记住 在哪个watcher中使用了，也就是属性在哪个组件中
+  }();
 
+  var stack = []; // 属性依赖dep 要记住 在哪个watcher中使用了，也就是属性在哪个组件中
 
   function pushTarget(watcher) {
     Dep.target = watcher;
+    stack.push(watcher);
   }
   function popTarget() {
-    Dep.target = null;
+    // Dep.target = null
+    stack.pop(); // 如果栈中有多个watcher 出栈后Dep.target  要指向数组中的最后一个watcher, 
+
+    Dep.target = stack[stack.length - 1];
+    console.log("stack: ", stack);
   }
 
   var Observer = /*#__PURE__*/function () {
@@ -460,7 +466,12 @@
       this.updateCallback = updateCallback;
       this.options = options; // 如果用户定义的watch属性或者直接调用vm.$watch(expr, cb)
 
-      this.user = options.user;
+      this.user = options.user; // computed属性
+
+      this.lazy = options.lazy; // 如果watcher上有lazy属性 说明是一个就算属性
+
+      this.dirty = this.lazy; // dirty代表取值时是否执行用户提供的方法
+
       this.deps = [];
       this.depsId = new Set();
       this.id = id$1++; // watcher内部组件渲染或者更新都是render函数
@@ -479,9 +490,10 @@
 
           return obj;
         };
-      }
+      } // 渲染watcher和watch中的watch默认都是会执行一次的, 当时computed的watcher是默认不执行的
 
-      this.value = this.get();
+
+      this.value = this.lazy ? void 0 : this.get(); // this.value = this.get()
     } // watcher记录dep，去重
 
 
@@ -503,15 +515,19 @@
         pushTarget(this); // 把watcher实例给到Dep类去折腾. 在Dep.target = this
         // 渲染页面(1. 代码生成render 2. 生成DOM,挂载页面)
 
-        var result = this.getter();
+        var result = this.getter.call(this.vm);
         popTarget();
         return result;
       }
     }, {
       key: "update",
       value: function update() {
-        // this.get()
-        queueWatcher(this);
+        if (this.lazy) {
+          this.dirty = true; // 设置为true表示需要更新
+        } else {
+          // this.get()
+          queueWatcher(this);
+        }
       } // 执行每个watcher
 
     }, {
@@ -523,6 +539,25 @@
 
         if (this.user) {
           this.updateCallback.call(this.vm, newValue, oldValue);
+        }
+      } // 计算属性取值
+
+    }, {
+      key: "evaluate",
+      value: function evaluate() {
+        // 调用get, get方法有返回值result,取值当然有返回值
+        this.value = this.get();
+        this.dirty = false; // 取了一次值, 就不是dirty的了
+      }
+    }, {
+      key: "depend",
+      value: function depend() {
+        // 拿出当前watcher的所有依赖项
+        var i = this.deps.length;
+
+        while (i--) {
+          // 让每一个dep记录当前的渲染watcher
+          this.deps[i].depend();
         }
       }
     }]);
@@ -586,6 +621,10 @@
     if (opts.watch) {
       initWatch(vm);
     }
+
+    if (opts.computed) {
+      initComputed(vm);
+    }
   } // data数据的初始化操作, 数据劫持
 
   function initData(vm) {
@@ -638,6 +677,66 @@
 
 
     return vm.$watch(exprOrFn, handler, options);
+  }
+
+  function initComputed(vm) {
+    var computed = vm.$options.computed;
+    var watchers = vm._computedWatchers = {}; // debugger
+    // 因为依赖的属性变更，计算属性要重新执行, 有依赖收集的功能, 内部实现了watcher，所以要重写computed的每一个属性,
+    // 并且将属性改在到vm实例上，可以让组件通过this.计算属性获的形式 获取到这个值
+
+    for (var key in computed) {
+      var userDef = computed[key]; // 两种计算属性的写法 1. 函数 2. 对象
+      // 获取get方法, 用于传递给watcher的 get属性, 即属性发生变更执行的函数
+
+      var getter = typeof userDef == 'function' ? userDef : userDef.get; // 给每个计算属性增加一个watcher,保存的vm实例变量_computedWatchers上, watcers['fullName'] = watcher
+      // 并且标识一下当前的watcher的类型是计算属性，是lazy的
+
+      watchers[key] = new Watcher(vm, getter, function () {}, {
+        lazy: true
+      });
+      defineComputed(vm, key, userDef);
+    }
+  } // 这里没有写vm而是target表示的是: 可能是给Vue的实例挂属性, 也可能给组件实例挂属性
+  // 入参:userDef 可能是函数 或者是对象;如果是函数,处理成对象的形式. 定义sharedComputedProperty为对象,给对象增加get,set属性
+
+
+  function defineComputed(target, key, userDef) {
+    var sharedComputedProperty = {};
+
+    if (typeof userDef == 'function') {
+      sharedComputedProperty.get = createComputedGetter(key); // 调用get,就是执行usefDef函数
+    } else {
+      sharedComputedProperty.get = createComputedGetter(key);
+      sharedComputedProperty.set = userDef.set;
+    }
+
+    Object.defineProperty(target, key, sharedComputedProperty);
+  } // 此方法是我们包装的方法，每次取值会调用此方法
+
+
+  function createComputedGetter(key) {
+    // 取值时才会调用
+    return function () {
+      var watcher = this._computedWatchers[key]; // 拿到这个属性对应的watcher
+
+      if (watcher) {
+        if (watcher.dirty) {
+          // 默认肯定是脏的，Watcher类初始化为true.
+          watcher.evaluate(); // 对当前watcher求值
+          // return watcher.value
+        } // 
+
+
+        if (Dep.target) {
+          // 说明还有渲染watcher，也应该一并的收集起来
+          watcher.depend();
+        } // 如果不是dirty的，说明是新的，赶紧的，直接返回
+
+
+        return watcher.value;
+      }
+    };
   }
 
   function stateMixin(Vue) {
@@ -1327,60 +1426,6 @@
   stateMixin(Vue); // 扩展Vue静态方法
 
   initGlobalApi(Vue);
-  // import { compileToFunctions } from "./compiler/bk-jf/index"
-  // import { createElm, patch } from './vdom/patch'
-  // let vm1 = new Vue({ data: { name: 'liuzc' } })
-  // let render1 = compileToFunctions(`
-  // <ul>
-  //     <li style="background:red" key="A">A</li>
-  //     <li style="background:yellow" key="B">B</li>
-  //     <li style="background:pink" key="C">C</li>
-  //     <li style="background:green" key="D">D</li>
-  //     <li style="background:green" key="F">F</li>
-  // </ul>`)
-  // let oldVnode = render1.call(vm1)  // 返回虚拟DOM
-  // document.body.appendChild(createElm(oldVnode))
-  // let vm2 = new Vue({ data: { name: 'sanfeng' } })
-  // let render2 = compileToFunctions(`
-  // <ul>
-  //   <li style="background:green" key="F">F</li>
-  //   <li style="background:red" key="A">A</li>
-  //   <li style="background:red" key="M">M</li>
-  //   <li style="background:yellow" key="B">B</li>
-  // </ul>`)
-  // let newVnode = render2.call(vm2)
-  // setTimeout(() => {
-  //   patch(oldVnode, newVnode) // 更新时，把新老vdom传入patch方法
-  // }, 3000)
-  // --------------------------- 2 ---------------------------
-  // let vm1 = new Vue({ data: { name: 'liuzc' } })
-  // let render1 = compileToFunctions(`
-  //   <div id="a"></div>
-  // `)
-  // let oldVnode = render1.call(vm1)  // 返回虚拟DOM
-  // console.log("odlVnode:", oldVnode)
-  // // 
-  // let vm2 = new Vue({ data: { name: 'sanfeng' } })
-  // let render2 = compileToFunctions('<div id="b"></div>')
-  // let newVnode = render2.call(vm2)
-  // let el = createElm(oldVnode)
-  // document.body.appendChild(el)
-  // setTimeout(() => {
-  //   patch(oldVnode, newVnode) // 更新时，把新老vdom传入patch方法
-  // }, 1500)
-  // --------------------------- 1 ---------------------------
-  // let vm1 = new Vue({ data: { name: 'liuzc' } })
-  // let render1 = compileToFunctions('<div id="a" style="color: red">{{name}}</div>')
-  // let oldVnode = render1.call(vm1)  // 返回虚拟DOM
-  // // 
-  // let vm2 = new Vue({ data: { name: 'sanfeng' } })
-  // let render2 = compileToFunctions('<div id="b"></div>')
-  // let newVnode = render2.call(vm2)
-  // let el = createElm(oldVnode)
-  // document.body.appendChild(el)
-  // setTimeout(() => {
-  //   patch(oldVnode, newVnode) // 更新时，把新老vdom传入patch方法
-  // }, 1500)
 
   return Vue;
 

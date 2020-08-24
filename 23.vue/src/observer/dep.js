@@ -20,13 +20,19 @@ class Dep {
 }
 
 
+let stack = []
 // 属性依赖dep 要记住 在哪个watcher中使用了，也就是属性在哪个组件中
 export function pushTarget(watcher) {
   Dep.target = watcher
+  stack.push(watcher)
 }
 
 export function popTarget() {
-  Dep.target = null
+  // Dep.target = null
+  stack.pop()
+  // 如果栈中有多个watcher 出栈后Dep.target  要指向数组中的最后一个watcher, 
+  Dep.target = stack[stack.length - 1]
+  console.log("stack: ", stack)
 }
 
 

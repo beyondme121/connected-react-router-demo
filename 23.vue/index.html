@@ -11,10 +11,10 @@
 <body>
   <div id="app">
     <span>computed</span>
-
+    {{fullName}}
   </div>
-  <!-- <script src="dist/umd/vue.js"></script> -->
-  <script src="node_modules/vue/dist/vue.js"></script>
+  <script src="dist/umd/vue.js"></script>
+  <!-- <script src="node_modules/vue/dist/vue.js"></script> -->
   <script>
     let vm = new Vue({
       el: '#app',
@@ -31,13 +31,15 @@
         },
       }
     });
-    vm.fullName
-    vm.fullName
+    vm.firstName = '李'
+    console.log(vm.fullName)
+    console.log(vm.fullName)
+    // console.log(vm.fullName)
 
-    setTimeout(() => {
-      vm.firstName = 100
-      vm.fullName
-    }, 1000)
+    // setTimeout(() => {
+    //   vm.firstName = '李'
+    //   console.log(vm.fullName)
+    // }, 1000)
 
   </script>
 </body>

@@ -16,6 +16,9 @@ class Watcher {
     this.options = options
     // 如果用户定义的watch属性或者直接调用vm.$watch(expr, cb)
     this.user = options.user
+    // computed属性
+    this.lazy = options.lazy; // 如果watcher上有lazy属性 说明是一个就算属性
+    this.dirty = this.lazy; // dirty代表取值时是否执行用户提供的方法
 
     this.deps = []
     this.depsId = new Set()
@@ -34,7 +37,9 @@ class Watcher {
         return obj
       }
     }
-    this.value = this.get()
+    // 渲染watcher和watch中的watch默认都是会执行一次的, 当时computed的watcher是默认不执行的
+    this.value = this.lazy ? void 0 : this.get()
+    // this.value = this.get()
   }
 
   // watcher记录dep，去重
@@ -51,14 +56,18 @@ class Watcher {
   get() {
     pushTarget(this)    // 把watcher实例给到Dep类去折腾. 在Dep.target = this
     // 渲染页面(1. 代码生成render 2. 生成DOM,挂载页面)
-    let result = this.getter()
+    let result = this.getter.call(this.vm)
     popTarget()
     return result
   }
 
   update() {
-    // this.get()
-    queueWatcher(this)
+    if (this.lazy) {
+      this.dirty = true // 设置为true表示需要更新
+    } else {
+      // this.get()
+      queueWatcher(this)
+    }
   }
 
   // 执行每个watcher
@@ -68,6 +77,22 @@ class Watcher {
     this.value = newValue
     if (this.user) {
       this.updateCallback.call(this.vm, newValue, oldValue)
+    }
+  }
+
+  // 计算属性取值
+  evaluate() {
+    // 调用get, get方法有返回值result,取值当然有返回值
+    this.value = this.get()
+    this.dirty = false    // 取了一次值, 就不是dirty的了
+  }
+
+  depend() {
+    // 拿出当前watcher的所有依赖项
+    let i = this.deps.length;
+    while (i--) {
+      // 让每一个dep记录当前的渲染watcher
+      this.deps[i].depend()
     }
   }
 }
