@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./dist/umd/vue.js"></script>
+</head>
+
+<body>
+  <div id="app">
+    {{a}}
+  </div>
+
+  <script>
+    let vm = new Vue({
+      el: '#app',
+      data() {
+        return {
+          a: 1,
+          b: 2,
+          c: 3
+        }
+      },
+      watch: {
+        // a: function (newValue, oldValue) {
+        //   console.log("newValue: ", newValue)
+        // },
+        // b: [
+        //   (newValue, oldValue) => {
+        //     console.log('xxxx')
+        //   },
+        //   (newValue, oldValue) => {
+        //     console.log('yyyy')
+        //   }
+        // ],
+        c: {
+          handler(newValue, oldValue) {
+            console.log('c handler', newValue, oldValue)
+          }
+        },
+        // d: "dd"
+      }
+    })
+    vm.c = 100
+    setTimeout(() => {
+      vm.c = 200
+    }, 1000)
+  </script>
+</body>
+
+</html>

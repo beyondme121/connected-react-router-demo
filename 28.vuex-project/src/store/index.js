@@ -23,6 +23,11 @@ const store = new Vuex.Store({
       setTimeout(() => {
         store.commit('changeAge', payload)
       }, 1000);
+    },
+    changeName({ commit }, payload) {
+      setTimeout(() => {
+        commit('changeName', 'xxx')
+      }, 1000);
     }
   },
 

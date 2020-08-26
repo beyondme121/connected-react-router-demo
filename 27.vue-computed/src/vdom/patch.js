@@ -1,8 +1,5 @@
 // 返回值是真实DOM, 调用处lifecycle.js中 赋值给了vue实例的$el属性上，保存着DOM
 export function patch(oldVNode, vnode) {
-  if (!oldVNode) {
-    return createElm(vnode)
-  }
   // ------------------- 处理初渲染流程，直接用初始VDOM 替换掉 原始DOM节点(#app)
   // 默认初始化时，时直接用虚拟节点创建出真实的DOM节点，替换掉老的DOM节点
   if (oldVNode.nodeType === 1) { // html dom 固有的属性, =1 表示是元素
@@ -156,26 +153,9 @@ function updateChildren(oldChildren, newChildren, parent) {
 }
 
 
-// 接收的虚拟节点, 在vdom/index.js中 createComponent返回的vnode函数返回的结果 {tag, data, key, ...,componentOptions}
-function createComponent(vnode) {
-  let i = vnode.data
-  if ((i = i.hook) && (i = i.init)) {
-    i(vnode)    // 把虚拟节点传递给data.hook.init函数作为参数
-  }
-  if (vnode.componentInstance) {
-    return true
-  }
-}
-
-
 export function createElm(vnode) {
   let { tag, children, key, data, text } = vnode;
   if (typeof tag == 'string') { // 创建元素 放到vnode.el上
-    // 判断组件的情况, 根据虚拟节点判断是否为组件以及把vnode生成真实的dom挂载到$el
-    if (createComponent(vnode)) {
-      return vnode.componentInstance.$el
-    }
-
     // 创建DOM
     vnode.el = document.createElement(tag);
     // 更新属性

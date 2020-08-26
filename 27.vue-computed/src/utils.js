@@ -43,17 +43,6 @@ const strategy = {}
 
 // }
 
-strategy.components = function (parentVal, childVal) {
-  // res可以通过__proto__ 查找到父亲的值, 父组件的选项
-  const res = Object.create(parentVal)
-  // 如果有子组件, 就把子组件的所有属性都定义在res上,儿子上没有属性，就通过__proto__向上查找,相当于继承了
-  if (childVal) {
-    for (let key in childVal) {
-      res[key] = childVal[key]
-    }
-  }
-  return res
-}
 
 
 
@@ -85,25 +74,11 @@ export function mergeOptions(parent, child) {
   }
 
   // 合并生命周期的钩子hook, 如created
-  // function mergeField(key) {
-  //   if (strategy[key]) {
-  //     options[key] = strategy[key](parent[key], child[key])
-  //   } else {
-  //     options[key] = child[key]
-  //   }
-  // }
-
-  function mergeField(key) { // 合并字段
-    // 根据key 不同的策略来进行合并 
+  function mergeField(key) {
     if (strategy[key]) {
-      options[key] = strategy[key](parent[key], child[key]);
+      options[key] = strategy[key](parent[key], child[key])
     } else {
-      // todo默认合并
-      if (child[key]) {
-        options[key] = child[key]
-      } else {
-        options[key] = parent[key];
-      }
+      options[key] = child[key]
     }
   }
 
@@ -156,18 +131,3 @@ export function nextTick(cb) {
     pending = true
   }
 }
-
-
-function makeMap(str) {
-  const mapping = {}
-  const list = str.split(',')
-  for (let i = 0; i < list.length; i++) {
-    mapping[list[i]] = true
-  }
-  return key => {
-    return mapping[key]
-  }
-}
-
-// 判断标签名是否为原生标签
-export const isReservedTag = makeMap('a,div,img,image,text,span,p,button,input,textarea,ul,li')

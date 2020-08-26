@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+</head>
+
+<body>
+  <div id="app">
+    <span>computed</span>
+    {{fullName}}
+  </div>
+  <script src="dist/umd/vue.js"></script>
+  <!-- <script src="node_modules/vue/dist/vue.js"></script> -->
+  <script>
+    let vm = new Vue({
+      el: '#app',
+      data() {
+        return {
+          firstName: '张',
+          lastName: '三'
+        }
+      },
+      computed: {
+        fullName() {
+          console.log('执行了')
+          return this.firstName + this.lastName
+        },
+      }
+    });
+    vm.firstName = '李'
+    console.log(vm.fullName)
+    console.log(vm.fullName)
+    // console.log(vm.fullName)
+
+    // setTimeout(() => {
+    //   vm.firstName = '李'
+    //   console.log(vm.fullName)
+    // }, 1000)
+
+  </script>
+</body>
+
+</html>

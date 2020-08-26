@@ -10,38 +10,65 @@
 
 <body>
   <div id="app">
-    <span>computed</span>
-    {{fullName}}
+    <my-button></my-button>
+    <my-button></my-button>
+    <my-button></my-button>
+    <aa></aa>
   </div>
   <script src="dist/umd/vue.js"></script>
   <!-- <script src="node_modules/vue/dist/vue.js"></script> -->
   <script>
+
+
+    // 全局注册
+    Vue.component('my-button', {
+      template: `<button>click me</button> `,
+    })
+    Vue.component('aa', {
+      template: `<button>click me</button>`,
+    })
+
+
     let vm = new Vue({
       el: '#app',
+      components: {
+        aa: {
+          template: `<div>aa</div>`
+        },
+        bb: {
+          template: `<div>bb</div>`
+        }
+      },
       data() {
         return {
           firstName: '张',
           lastName: '三'
         }
       },
-      computed: {
-        fullName() {
-          console.log('执行了')
-          return this.firstName + this.lastName
-        },
-      }
     });
-    vm.firstName = '李'
-    console.log(vm.fullName)
-    console.log(vm.fullName)
-    // console.log(vm.fullName)
 
-    // setTimeout(() => {
-    //   vm.firstName = '李'
-    //   console.log(vm.fullName)
-    // }, 1000)
+    console.log(vm)
+
+
+    // ButtonContainer = Vue.extend({
+    //   template: `<div>
+    //       <button>click me, {{name}}</button>
+    //     </div>`,
+    //   data() {
+    //     return {
+    //       name: 'hello'
+    //     }
+    //   }
+    // })
+    // let mybtn = new ButtonContainer()
+    // mybtn.$mount('#btn')
+
+
 
   </script>
+
+
+
 </body>
 
 </html>

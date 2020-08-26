@@ -8,7 +8,6 @@ export function initMixin(Vue) {
   Vue.prototype._init = function (options) {
     // 选项挂载到vue实例上
     const vm = this
-    console.log("-------------", vm.constructor.options, options)
     vm.$options = mergeOptions(vm.constructor.options, options)
     // console.log(vm.$options)
 
