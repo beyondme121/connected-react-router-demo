@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../../node_modules/vue/dist/vue.js"></script>
+</head>
+
+<body>
+  <div id="app">{{count}}</div>
+  <script>
+    let mybutton = Vue.component('my-button', {
+      data: function () {
+        return {
+          count: 0
+        }
+      },
+      template: `<button @click="count++">click me {{count}}</button>`
+    })
+
+    let vm = new Vue({
+      el: '#app',
+      template: `<div>
+        <my-button></my-button>
+        <my-button></my-button>
+      </div>`
+    })
+
+    console.log(vm)
+  </script>
+</body>
+
+</html>
