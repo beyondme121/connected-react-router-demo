@@ -1,3 +1,5 @@
+import { addEvent } from './events'
+
 function render(vdom, container) {
   let dom = createDOM(vdom)
   if (dom) container.appendChild(dom)
@@ -12,7 +14,7 @@ export function createDOM(vdom) {
     return ''
   }
 
-  let { type, props } = vdom
+  let { type, props, ref } = vdom
   let dom
   // 1. 判断虚拟DOM的类型, 原生DOM, 函数组件，类组件等
   if (typeof type === 'function') {
@@ -38,9 +40,11 @@ export function createDOM(vdom) {
   } else {
     dom.textContent = props.children ? props.children.toString() : ''
   }
+  if (ref) ref.current = dom
   return dom
 }
 
+// 更新属性以及事件绑定
 function updateProps(dom, props) {
   for (let key in props) {
     if (key === 'children') continue
@@ -50,7 +54,8 @@ function updateProps(dom, props) {
         dom.style[attr] = style[attr]
       }
     } else if (key.startsWith('on')) {
-      dom[key.toLocaleLowerCase()] = props[key]
+      // dom[key.toLocaleLowerCase()] = props[key]   这种方式是将事件绑定给当前的DOM元素了
+      addEvent(dom, key.toLowerCase(), props[key])
     } else {
       dom[key] = props[key]
     }
