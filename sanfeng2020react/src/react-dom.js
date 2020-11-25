@@ -9,11 +9,9 @@ export function createDOM(vdom) {
   if (typeof vdom === 'string' || typeof vdom === 'number') {
     return document.createTextNode(vdom)
   }
-
   if (!vdom) {
     return ''
   }
-
   let { type, props, ref } = vdom
   let dom
   // 1. 判断虚拟DOM的类型, 原生DOM, 函数组件，类组件等
@@ -75,10 +73,20 @@ function updateFunctionComponent(vdom) {
 // 类组件渲染
 function updateClassComponent(vdom) {
   let { type, props } = vdom
-  let classInstance = new type(props)
+  let classInstance = new type(props) // new Counter, 调用构造函数
+  // 1. willMount
+  if (classInstance.componentWillMount) {
+    classInstance.componentWillMount()
+  }
+  // 2. 生命周期的render执行 step2
   let renderVdom = classInstance.render()
   let dom = createDOM(renderVdom)
   classInstance.dom = dom
+
+  // didMount
+  if (classInstance.componentDidMount) {
+    classInstance.componentDidMount()
+  }
   return dom
 }
 

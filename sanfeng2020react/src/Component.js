@@ -23,6 +23,12 @@ class Updater {
   }
   addState(partialState) {
     this.pendingState.push(partialState)
+    this.emitUpdate()
+    // updateQueue.isBatchingUpdate
+    //   ? updateQueue.add(this)
+    //   : this.updateComponent()
+  }
+  emitUpdate() {
     updateQueue.isBatchingUpdate
       ? updateQueue.add(this)
       : this.updateComponent()
@@ -31,10 +37,29 @@ class Updater {
     let { classInstance, pendingState } = this
     if (pendingState.length > 0) {
       // 获取最新的状态, 替换老的状态
-      classInstance.state = this.getState()
-      classInstance.forceUpdate()
+      // classInstance.state = this.getState()
+      // classInstance.forceUpdate()
+      this.shouldUpdate(classInstance, this.getState()) // 是否要更新(组件实例,合并后的状态 传递进来)
     }
   }
+
+  shouldUpdate(classInstance, nextState) {
+    classInstance.state = nextState
+    // 明确指出是否不更新,
+    if (
+      classInstance.shouldComponentUpdate &&
+      !classInstance.shouldComponentUpdate(classInstance.props, nextState) // 执行并返回false, 就不更新了 否则更新组件
+    ) {
+      classInstance.state = nextState
+      return
+    }
+    // hook
+    if (classInstance.componentWillUpdate) {
+      classInstance.componentWillUpdate()
+    }
+    classInstance.forceUpdate()
+  }
+
   getState() {
     let { classInstance, pendingState } = this
     let { state } = classInstance
@@ -74,6 +99,9 @@ function updateClassComponent(classInstance, newVdom) {
   let oldDOM = classInstance.dom
   let newDOM = createDOM(newVdom)
   oldDOM.parentNode.replaceChild(newDOM, oldDOM)
+  if (classInstance.componentDidUpdate) {
+    classInstance.componentDidUpdate()
+  }
   classInstance.dom = newDOM
 }
 
