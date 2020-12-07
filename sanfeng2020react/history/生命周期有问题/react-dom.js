@@ -1,4 +1,4 @@
-import { addEvent } from './event'
+import { addEvent } from './events'
 /**
  * 虚拟DOM转换成真实DOM,并插入到容器里
  * @param {*} vdom 虚拟DOM
@@ -55,7 +55,7 @@ export function createDOM(vdom) {
   }
   if (ref) ref.current = dom
   //让虚拟DOM的dom属性指定此虚拟DOM创建出来的真实DOM
-  //   vdom.dom = dom
+  vdom.dom = dom
   return dom
 }
 /**
