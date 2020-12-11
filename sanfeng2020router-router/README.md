@@ -74,3 +74,44 @@ export default Route
 
 
 ## 路由规则的匹配
+
+
+## 实现受保护的路由
+- 通过使用render属性, 接收函数, 函数参数是Route中的所有props
+  
+```js
+// Admin组件式有权限限制的, 只有登录并且管理员等一系列权限判断才能访问Admin组件
+<组件名 path="/admin" component={Admin}/>
+```
+
+```js
+import React from 'react'
+import { Route, Redirect } from '../react-router-dom'
+const Protected = props => {
+  let { path, component: RouteComponent } = props
+  return (
+    <Route path={path}
+      render={
+        routeProps => {
+          let isLogin = localStorage.getItem('login')
+          if (isLogin) {
+            return <RouteComponent {...routeProps} />
+          } else {
+            return <Redirect to={{ pathname: '/login', state: { from: path } }} />
+          }
+        }
+      }
+    />
+  )
+}
+export default Protected
+```
+
+
+## 路由匹配规则渲染组件的三种方式
+> 公共的属性就是path, url的pathname与路由规则的path路径的匹配
+
+
+- 直接给component={组件} 直接渲染组件
+- render属性: 接收Route组件内部传递的props 这个props是Router组件通过context向下级组件传递的Router全局的对象 {history, location,match}
+- children属性: 无论是否匹配路径都会渲染组件, 前提是不适用Switch进行包裹, 直接在Route组件中作为props属性 <Route path="/xxx" children={() => {}}>

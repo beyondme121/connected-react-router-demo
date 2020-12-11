@@ -29,24 +29,48 @@
 
 import React from 'react'
 import RouterContext from './RouterContext'
-
+import matchPath from './matchPath'
 class Route extends React.Component {
   // 类组件 获取context的方式之一
   static contextType = RouterContext
 
   render() {
-    // console.log('this.context', this.context)
     const { history, location } = this.context
-    let { path, component: RouteComponent } = this.props
-    let match = location.pathname === path
+    let {
+      path,
+      component: RouteComponent,
+      computedMatch, // 路径匹配 Switch组件向下级组件传递的属性, 用于当匹配了路径就返回, 传递这个参数为了优化缓存
+      render,
+      children,
+    } = this.props
+    // let match = location.pathname === path
+    let match = computedMatch
+      ? computedMatch
+      : matchPath(location.pathname, this.props)
     let routeConfig = {
       history,
       location,
     }
+    let element
     if (match) {
-      return <RouteComponent {...routeConfig} />
+      routeConfig.match = match
+      if (children) {
+        element = children(routeConfig) // 给children函数传递route配置对象
+      } else if (RouteComponent) {
+        element = <RouteComponent {...routeConfig} />
+      } else if (render) {
+        element = render(routeConfig)
+      } else {
+        element = null
+      }
+    } else {
+      if (children) {
+        element = children(routeConfig)
+      } else {
+        element = null
+      }
     }
-    return null
+    return element
   }
 }
 export default Route
