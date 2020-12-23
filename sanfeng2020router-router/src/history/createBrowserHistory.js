@@ -3,6 +3,7 @@ function createBrowserHistory() {
   // 浏览器的history对象
   let globalHistory = window.history
   let listeners = []
+  let blockMessageCallback
   function go(n) {
     globalHistory.go(n)
   }
@@ -38,11 +39,28 @@ function createBrowserHistory() {
       state = pathname.state
       pathname = pathname.pathname
     }
+    // 如果存在用户传递的回调函数
+    if (blockMessageCallback) {
+      let showMessage = blockMessageCallback({ pathname }) // 用于在业务组件中调用获取跳转后的路径
+      let allow = window.confirm(showMessage)
+      console.log('showMessage', showMessage)
+      if (!allow) {
+        return
+      }
+    }
     globalHistory.pushState(state, null, pathname)
     // 因为调用push就会修改history对象中的属性, 所以要同步一下history对象
     // 更新history对象中的location, action两个属性
     let location = { state, pathname }
     setState({ action, location })
+  }
+
+  // 阻止路由跳转的逻辑 保存个函数作用域内的变量
+  function block(newMessage) {
+    blockMessageCallback = newMessage
+    return () => {
+      blockMessageCallback = null
+    }
   }
 
   // console.log('globalHistory,', globalHistory)
@@ -62,6 +80,7 @@ function createBrowserHistory() {
       state: globalHistory.state,
     },
     push,
+    block,
   }
   return history
 }

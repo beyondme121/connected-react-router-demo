@@ -115,3 +115,26 @@ export default Protected
 - 直接给component={组件} 直接渲染组件
 - render属性: 接收Route组件内部传递的props 这个props是Router组件通过context向下级组件传递的Router全局的对象 {history, location,match}
 - children属性: 无论是否匹配路径都会渲染组件, 前提是不适用Switch进行包裹, 直接在Route组件中作为props属性 <Route path="/xxx" children={() => {}}>
+
+
+
+## NavLink实现
+
+
+## withRouter实现 
+高阶组件, 给组件传递路由属性 history location等
+为什么需要这个?
+- 所有路由规则匹配都是通过最根源是通过<Route>进行渲染,无论是component还是render,children, Route组件获取上下文传递给子组件路由信息
+- 而其他在<Router></Router>的子组件或者DOM元素就没有这些history location信息
+- 如果需要需要传递给组件
+
+
+## this.setState(fn, callback) 如何用hook实现callback
+即更新状态之后 渲染之后执行callback, 
+https://www.zhihu.com/question/364261651?utm_source=wechat_session
+
+
+
+## 路由懒加载
+- 实现React.lazy函数, 并不是react-router的方法
+- 使用React.Suspense 进行包装 lazy返回的组件, 同时传递fallback回调函数返回 懒加载渲染前的组件元素信息 比如loading效果

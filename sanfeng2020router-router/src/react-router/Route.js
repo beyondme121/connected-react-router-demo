@@ -35,7 +35,7 @@ class Route extends React.Component {
   static contextType = RouterContext
 
   render() {
-    const { history, location } = this.context
+    let { history, location, match } = this.context // 获取默认的上下文
     let {
       path,
       component: RouteComponent,
@@ -44,7 +44,7 @@ class Route extends React.Component {
       children,
     } = this.props
     // let match = location.pathname === path
-    let match = computedMatch
+    match = computedMatch
       ? computedMatch
       : matchPath(location.pathname, this.props)
     let routeConfig = {
@@ -53,10 +53,12 @@ class Route extends React.Component {
     }
     let element
     if (match) {
+      // 如果路由匹配上, 更新路由的match属性对象
       routeConfig.match = match
       if (children) {
         element = children(routeConfig) // 给children函数传递route配置对象
       } else if (RouteComponent) {
+        // 通过props传递给Route的渲染组件, 我们还需要通过上下文
         element = <RouteComponent {...routeConfig} />
       } else if (render) {
         element = render(routeConfig)
@@ -70,7 +72,12 @@ class Route extends React.Component {
         element = null
       }
     }
-    return element
+
+    return (
+      <RouterContext.Provider value={routeConfig}>
+        {element}
+      </RouterContext.Provider>
+    )
   }
 }
 export default Route

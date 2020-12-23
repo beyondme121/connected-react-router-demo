@@ -1,31 +1,38 @@
 import React from 'react'
-import { Route, Link } from './'
+import { __RouterContext as RouterContext, matchPath, Link } from './'
 // NavLink的功能是:
-/**
- * 1. 导航栏: 最终渲染是a标签
- * 2. 当被选中时, 高亮显示, 没有选中, 不高亮
- *    无论是否选中或者路径是否匹配上, 都要显示. 这就用到了children属性 <Route children/>
- */
+// 路径匹配成功 加activeClass activeStyle
 
 function NavLink(props) {
-  // 如果是对象取pathname 否则直接就是路径字符串
-  let to = typeof props.to === 'object' ? props.to.pathname : props.to
-  return (
-    <Route
-      path={to}
-      children={(routeProps) => {
-        let style = {}
-        if (routeProps.match) {
-          style.backgroundColor = 'red'
-          style.color = 'green'
-        }
-        return (
-          <Link {...props} {...routeProps} style={style}>
-            {props.children}
-          </Link>
-        )
-      }}
-    />
-  )
+  const context = React.useContext(RouterContext)
+  let { pathname } = context.location
+  // 解构NavLink的属性 <NavLink to='/user' className="blueBg" />
+  let {
+    to: path,
+    className: classNameProps = '',
+    activeClassName = 'active',
+    style: styleProps = {},
+    activeStyle = {},
+    children,
+    exact,
+  } = props
+  let isActive = matchPath(pathname, { path, exact })
+  let className = isActive
+    ? joinClassName(classNameProps, activeClassName)
+    : classNameProps
+  let style = isActive ? { ...styleProps, ...activeStyle } : styleProps
+  // 组装NavLink的属性
+  let linkProps = {
+    className,
+    style,
+    to: path,
+    children,
+  }
+  return <Link {...linkProps} />
+}
+
+function joinClassName(...classnames) {
+  // filter的作用是去掉空格, 然后用空格连接
+  return classnames.filter((c) => c).join(' ')
 }
 export default NavLink
