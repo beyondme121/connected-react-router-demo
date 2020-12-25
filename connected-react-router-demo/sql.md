@@ -142,8 +142,34 @@ GROUP BY a.ParentServiceStationNameCN
 ORDER BY 4 DESC
 ```
 
-## 
+## 现场工程师总数
 ```sql
 SELECT (SELECT COUNT(*) FROM DW.vABBFieldServiceEngineer ) 
 + (select COUNT(DISTINCT EngineerID) from DW.vEngineerProductAuthorization) AS EngineerCount
+```
+
+## ABB现场工程师数量
+```sql
+SELECT COUNT(*)  AS 总工程师人数 FROM DW.vABBFieldServiceEngineer
+```
+
+## 服务中的ABB工程师数量
+```sql
+SELECT  COUNT(DISTINCT a.ServiceEngineerID)
+FROM    DW.viCareFieldServiceOrder a
+WHERE   a.FiedServiceOrderStatus = N'现场进行中'
+        AND a.ServiceProviderCompanyName = N'北京ABB电气传动系统有限公司';
+```
+
+## 服务站工程师数量
+```sql
+select COUNT(DISTINCT EngineerID) AuthorizationCount from DW.vEngineerProductAuthorization
+```
+
+## 服务中的服务站工程师数量
+```sql
+SELECT  COUNT(DISTINCT a.ServiceEngineerID)
+FROM    DW.viCareFieldServiceOrder a
+WHERE   a.FiedServiceOrderStatus = N'现场进行中'
+        AND a.ServiceProviderCompanyName != N'北京ABB电气传动系统有限公司';
 ```

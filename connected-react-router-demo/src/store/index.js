@@ -1,18 +1,20 @@
-// import { createBrowserHistory } from 'history'
-// import { applyMiddleware, compose, createStore } from 'redux'
-// import { routerMiddleware } from 'connected-react-router'
-// import createRootReducer from './reducers'
+import { createStore, applyMiddleware } from 'redux'
+import createSagaMiddleware from 'redux-saga'
+import reducers from './reducers'
+import rootSaga from './rootSaga'
+let sagaMiddleware = createSagaMiddleware() // 创建中间件
+let store = applyMiddleware(sagaMiddleware)(createStore)(reducers)
+sagaMiddleware.run(rootSaga)
 
-// export const history = createBrowserHistory()
+export default store
 
-// export default function configureStore(preloadedState) {
-//   const store = createStore(
-//     createRootReducer(history), // root reducer with router state
-//     preloadedState,
-//     compose(applyMiddleware(routerMiddleware(history)))
-//   )
 
-//   return store
-// }
-
-// 使用了configureStore.js 设置store
+// import {createStore, applyMiddleware} from 'redux';
+// import reducer from './reducer';
+// import createSagaMiddleware from 'redux-saga';
+// import rootSaga from './sagas';
+// let sagaMiddleware=createSagaMiddleware();
+// let store=applyMiddleware(sagaMiddleware)(createStore)(reducer);
+// sagaMiddleware.run(rootSaga);
+// window.store=store;
+// export default store;
